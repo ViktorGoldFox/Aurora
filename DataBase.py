@@ -66,7 +66,7 @@ class check:
             return False
     
 
-    def tokens_gen(message):
+    def images_gen(message):
         
         datauser = pd.read_csv("user.csv")
         

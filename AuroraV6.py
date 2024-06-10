@@ -7,8 +7,8 @@
 # ╚═╝░░╚═╝░╚═════╝░╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝╚═╝░░╚═╝ #
 #===================================================#
 
+from os import error
 from time import sleep
-from colorama import Back
 from logzero import logger, logfile
 
 from telebot import types
@@ -32,8 +32,8 @@ usage_ask = 0
 usage_gen = 0
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 # AI config
-# base_model = "gpt-3.5-turbo-16k-0613"
-base_model = "gpt-4o"
+base_model = "gpt-3.5-turbo-16k-0613"
+# base_model = "gpt-4o"
     # ChatGPT
 open_ai_token = "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"
     # GigaChat
@@ -91,10 +91,10 @@ def profile(message, isBack=False):
         bot.send_message(message.chat.id, "❌Идут тех. работы! Попробуйте позже!")
         return False
         
-    profile_data = BackGround.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
+    profile_data = DataBase.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
     
     if not isBack:
-        BackGround.checkCurNickName(message)
+        DataBase.check.checkCurNickName(message)
     
     ms_text = f"""
     ⭐️Профиль
@@ -163,25 +163,64 @@ def add(message):
         bot.register_next_step_handler(message, add)
         
 
+@bot.message_handler(commands=["forecast"])
+def forecast(message):
+    try:
+        command_split = message.text.split()
+
+        loading_message = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
+        loading_message
+
+        if (technical_brake) & (message.chat.id not in admins): 
+            bot.edit_message_text("❌Идут тех. работы! Попробуйте позже!", message.chat.id, loading_message.message_id)
+            return False
+
+        if len(command_split) > 1:
+            command_split.pop(0)
+            sity = " ".join(command_split)
+        else:
+            sity = "Санкт-петербург"
+
+        weather_text = BackGround.GetForecast(sity)
+
+        weather_text = BackGround.markdown_convert(weather_text)
+        
+        bot.edit_message_text(weather_text, message.chat.id, loading_message.message_id, parse_mode="MarkdownV2" )
+
+        logger.info(f"@{message.from_user.username} вывел прогноз погоды")
+        
+    except Exception as error:
+        logger.error(f"Ошибка в погоде: {error}") 
+        send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
+        
+
 @bot.message_handler(commands=["weather"])
 def weather(message):
-    command_split = message.text.split()
-    
-    if (technical_brake) & (message.chat.id not in admins): 
-        bot.send_message(message.chat.id, "❌Идут тех. работы! Попробуйте позже!")
-        return False
-    
-    if len(command_split) > 1:
-        command_split.pop(0)
-        sity = " ".join(command_split)
-    else:
-        sity = "Санкт-петербург"
-    
-    weather_text = BackGround.GetWeather(sity)
-    
-    bot.send_message(message.chat.id, weather_text)
-    
-    logger.info(f"@{message.from_user.username} вывел погоду")
+    try:
+        command_split = message.text.split()
+
+        loading_message = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
+        loading_message
+
+        if (technical_brake) & (message.chat.id not in admins): 
+            bot.edit_message_text("❌Идут тех. работы! Попробуйте позже!", message.chat.id, loading_message.message_id)
+            return False
+
+        if len(command_split) > 1:
+            command_split.pop(0)
+            sity = " ".join(command_split)
+        else:
+            sity = "Санкт-петербург"
+
+        weather_text = BackGround.GetWeather(sity)
+
+        bot.edit_message_text(weather_text, message.chat.id, loading_message.message_id, parse_mode="MarkdownV2")
+
+        logger.info(f"@{message.from_user.username} вывел погоду")
+        
+    except Exception as error:
+        logger.error(f"Ошибка в погоде: {error}") 
+        send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
 
 
 @bot.message_handler(commands=["sum"])
@@ -278,7 +317,7 @@ def ask(message, chat_is_local = True):
                 send_error(bot_ms=loading_mess, error_text="❌Нужно ввести промт после команды. Попробуйте снова!")
                 return False
         
-        user_gpt_model = BackGround.GetModel(message)
+        user_gpt_model = DataBase.getCurrentModel(message)
         if user_gpt_model in ["gpt-4-turbo", 'gpt-4-turbo-24-04-09', "gpt-4-1106-preview"]:
             usage_tokens = BackGround.mathToken(text=user_promt, is_gpt4=True)
         else:
@@ -287,18 +326,19 @@ def ask(message, chat_is_local = True):
         # Проверка наличия ответа на сообщение
         if message.reply_to_message != None: user_promt = f"{user_promt}: {message.reply_to_message.text}"
         
-        if BackGround.CheckTokenAsk(message, usage_tokens):
+        if DataBase.check.tokens_ask(message, usage_tokens):
             bot.edit_message_text("❌Недостаточно токенов! Для покупки писать сюда - @ViktorGoldFox", message.chat.id, loading_mess.message_id)
             return False
         
-        BackGround.NotAvailabilityUser(message, gp_id=gp_id, user_status=bot.get_chat_member(gp_id, message.from_user.id).status)
+        if message.chat.id != gp_id:
+            DataBase.check.add_user(message, bot.get_chat_member(gp_id, message.from_user.id).status)
         
         DataBase.subtraction_tokens.ask(message, usage_tokens)
         
         answer_text = BackGround.askGPT(user_promt, user_gpt_model, open_ai_token)
         
-        if BackGround.CheckShowLastToken(message, gp_id): 
-            ms_text = f"{BackGround.markdown_convert(answer_text)} \n{BackGround.GetLastTokens(message, usage_tokens)}"
+        if DataBase.check.ShowLastToken(message, gp_id): 
+            ms_text = f"{BackGround.markdown_convert(answer_text)} \n{BackGround.GetLastTokens(message, usage_tokens, DataBase.get_last_tokens(message))}"
         
         ms_text = f"{BackGround.markdown_convert(answer_text)}"
         
@@ -351,7 +391,7 @@ def generate(message):
             send_error(bot_ms=loading_mess, error_text="❌Нужно ввести промт после команды. Попробуйте снова!")
             return False
 
-        if BackGround.CheckTokenGen(message):
+        if DataBase.check.images_gen(message):
             bot.edit_message_text("❌Недостаточно токенов! Для покупки писать сюда - @ViktorGoldFox", message.chat.id, loading_mess.message_id)
             return False
         
@@ -380,12 +420,12 @@ def generate(message):
             markup.add(btn)
             
             if BackGround.CheckShowLastToken(message, gp_id):
-                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.GetLastImages(message)}"), reply_markup=markup)
+                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.GetLastImages(message, DataBase.get_last_images(message))}"), reply_markup=markup)
             else:
                 bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово"), reply_markup=markup)
         else:
             if BackGround.CheckShowLastToken(message, gp_id):
-                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.GetLastImages(message)}"))
+                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.GetLastImages(message, DataBase.get_last_images(message))}"))
             else:
                 bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово"), reply_markup=markup)
                 
@@ -404,7 +444,7 @@ def show_models(message):
     
     markup = types.InlineKeyboardMarkup()
     
-    models = BackGround.GetModels(message)
+    models = DataBase.get_models(message.chat.id)
     
     for model in models:
         btn = types.InlineKeyboardButton(f"⚙️ {model}", callback_data=f"change {model}")
@@ -428,16 +468,18 @@ def show_status(message):
     back_button = types.InlineKeyboardButton(f"Назад", callback_data=f"profile")
     markup.add(back_button)
     
-    bot.edit_message_reply_markup(message.chat.id, message.message_id, reply_markup=markup)
-    bot.edit_message_text("Выберете статус который зотите преобрести:", ch_id, message.message_id)
+    bot.edit_message_text("Выберете статус который зотите преобрести:", ch_id, message.message_id, reply_markup=markup)
     
+#BackEnd 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call: CallbackQuery):
     if call.data == 'change_model':
         show_models(call.message)
+        
     if call.data == 'buy_status':
         show_status(call.message)
+        
     if call.data == 'buy mvp': 
         bot.edit_message_text("""
 ⭐️ Чтобы приобрести статус MVP, выполните следующие шаги:
@@ -458,8 +500,8 @@ def callback_query(call: CallbackQuery):
 
  1. 🧐Узнайте свой никнейм. 
 Главная станица телеграмма -> три полоски в левом верхнем углу -> Мой профиль ->  Зажмите пальцем поле "Имя пользователя" -> Копировать имя
- 2. 📲Отправьте донат суммой 210₽ на Boosty (https://boosty.to/aurorabot/donate) с текстом:
-{Ваш nickname, например @ViktorGoldFox} MVP [Комментарий (не обязательно)]
+ 2. 📲Отправьте донат суммой 60₽ на Boosty (https://boosty.to/aurorabot/donate) с текстом:
+{Ваш nickname, например @ViktorGoldFox} premuim [Комментарий (не обязательно)]
  3. 🕗Ожидайте повышение (может занять до 6 часов, в зависимости от времени суток)
 
 🙏При трудностях, обратитесь в техническую поддержку: @ViktorGoldFox.
@@ -473,14 +515,19 @@ def callback_query(call: CallbackQuery):
     #     show_models(call.message)
     
     if call.data.split()[0] == 'change':
-        BackGround.changeModel(call.message, model=call.data.split()[1])
+        DataBase.changeModel(call.message, model=call.data.split()[1])
+        
+        markup = types.InlineKeyboardMarkup()
+        back_button = types.InlineKeyboardButton(f"Назад", callback_data=f"profile")
+        markup.add(back_button)
+    
+        bot.edit_message_text(f"Модель {call.data.split()[1]} успешно применина", call.message.chat.id, call.message.message_id, reply_markup=markup)
+        
     
     if call.data == 'profile':
         profile(call.message, isBack=True)
         
         # bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-    
-#BackEnd
     
 
 def send_error(bot_ms, error_text):

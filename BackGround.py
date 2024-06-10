@@ -1,6 +1,5 @@
 from base64 import b64decode
 from json import load
-from h11 import Data
 from requests import get
 from pymorphy2 import MorphAnalyzer
 
@@ -9,7 +8,6 @@ from datetime import datetime, timedelta
 import openai
 from gigachat import GigaChat
 
-import DataBase
 import Generator
 
 # Weather
@@ -49,14 +47,60 @@ def GetWeather(sity):
         weather_text = f"{weather_text} \n❄ Скорость снега: {snow_speed} mm/1h"
         
     return weather_text
+
+def GetForecast(sity):
+    url = f'http://api.openweathermap.org/data/2.5/forecast?q={sity}&units=metric&lang=ru&appid=dfe5e468eadee1e20ded5140d398450c'
+    weather_data = get(url).json()
+    
+    global_weather = []
+    
+    for i in range(len(weather_data['list'])):
+        dt = str(weather_data['list'][i]["dt_txt"])
+        
+        test = dt.split()
+        
+        if test[1] == "12:00:00":
+            temperature = str(round(weather_data['list'][i]['main']['temp']))
+            humidity = str(weather_data['list'][i]['main']['humidity'])
+            weathers = str(weather_data['list'][i]['weather'][0]['description'])
+            weather_main = str(weather_data['list'][i]['weather'][0]['main'])
+            wind = str(weather_data['list'][i]['wind']['speed'])
+            bar = str(round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1))
+            vid = str(weather_data['list'][i]['visibility'] / 1000)
+
+            # date = str(test[0]).replace("-", '\.')
+            
+            date = str(weather_data['list'][i]["dt_txt"]).split().pop(0)
+            
+            text_weather = (f"""\n{date}:```День: \nПогода: {weathers.title()} \nТемпература: {temperature} °C \nВлажность: {humidity}% \nВетер: {wind}m/s \nДавление: {bar}мм.рт.ст \nВидимость: {vid}km```""")
+            global_weather.append(f"{text_weather}")
+            
+        if test[1] == "03:00:00":
+            temperature1 = str(round(weather_data['list'][i]['main']['temp']))
+            humidity1 = str(weather_data['list'][i]['main']['humidity'])
+            weathers1 = str(weather_data['list'][i]['weather'][0]['description'])
+            wind1 = str(weather_data['list'][i]['wind']['speed'])
+            bar1 = str(round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1))
+            vid1 = str(weather_data['list'][i]['visibility'] / 1000)
+        
+            text_weather1 = (f"""```Ночь: \nПогода: {weathers1.title()} \nТемпература: {temperature1} °C \nВлажность: {humidity1}% \nВетер: {wind1}m/s \nДавление: {bar1}мм.рт.ст \nВидимость: {vid1}km```""")
+            global_weather.append(f"{text_weather1}")
+    
+    morph = MorphAnalyzer()
+    word_c = morph.parse(sity)[0]
+    gent = word_c.inflect({'loct'})
+    sity = str(gent.word).title()
+    
+    weather_text = f"""
+Прогноз в {sity}:
+{" ".join(global_weather)}"""
+    
+    return weather_text
     
     
 def checkCanceled(text):
     if text == "Отмена" or text == 'отмена':
         return True
-
-
-def checkCurNickName(message): DataBase.check.CurentNickname(message)
 
 
 def addNewUser(message, onCommand=False):
@@ -88,7 +132,7 @@ def addNewUser(message, onCommand=False):
     except Exception as e:
         return False
     
-      
+   
 def loadConfig():
     with open("config.json") as file_data:
         data = load(file_data)
@@ -130,11 +174,6 @@ def freshcheck(message, fr_time):
         return True
     else:
         return False
-    
-
-def NotAvailabilityUser(message, gp_id, user_status):
-    if message.chat.id != gp_id:
-        DataBase.check.add_user(message, user_status)
     
 
 def askGC(promt, token):
@@ -237,40 +276,18 @@ def GetLines(summorysen_coll):
     return get_text
     
 # Profile
-def get_profile(message, user_status):
-    return DataBase.get_profile(message, member_status=user_status)
 
-# Tokens
-def CheckShowLastToken(message, gp_id):
-    return DataBase.check.ShowLastToken(message.chat.id, gp_id)
-
-
-def GetLastTokens(message, use_tokens):
+def GetLastTokens(message, use_tokens, last_token):
     ms_text = f"""
 Потраченно ⊚: {use_tokens} 
-Осталось ⊚: {DataBase.get_last_tokens(message)}"""
+Осталось ⊚: {last_token}"""
     return ms_text
 
 
-def GetCurrentModel(message): return DataBase.getCurrentModel(message)
-
-
-def GetLastImages(message):
+def GetLastImages(message, last_image):
     ms_text = f"""
-Осталось ⊚: {DataBase.get_last_images(message)}"""
-    return ms_text
-
-def CheckTokenAsk(message, use_token): return DataBase.check.tokens_ask(message, use_token)
-
-
-def CheckTokenGen(message): return DataBase.check.tokens_gen(message)
-
-
-def GetModel(message): return DataBase.getCurrentModel(message)
-
-def GetModels(message): return DataBase.get_models(message.chat.id)
-
-def changeModel(message, model): DataBase.changeModel(message, model)
+Осталось ⊚: {last_image}"""
+    return ms_text 
 
 
 def mathToken(text, is_gpt4 = False):
@@ -279,6 +296,3 @@ def mathToken(text, is_gpt4 = False):
     if is_gpt4: use_tokens * 2
     
     return use_tokens
-
-def checkTokens(message, use_tokens):
-    if DataBase.check.tokens_ask(message, use_tokens): return "❌Недостаточно токенов! Для покупки писать сюда - @ViktorGoldFox"
