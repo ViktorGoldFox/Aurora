@@ -1,0 +1,8 @@
+pyTelegramBotAPI
+pandas
+requests
+pymorphy2
+logzero
+json
+gigachat
+openai==0.28.0
