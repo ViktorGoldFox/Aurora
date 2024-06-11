@@ -10,7 +10,7 @@ from gigachat import GigaChat
 
 import Dependencies.Generator as Generator
 
-dataFrame_path = "Birthdays.csv"
+dataFrame_path = "DataWrames/Birthdays.csv"
 config_path = 'Configs/config.json'
 
 # Weather

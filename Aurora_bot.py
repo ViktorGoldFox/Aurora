@@ -2,8 +2,8 @@
 #Создатель:ViktorGoldFox
 #-=-=-=-=-=-=-=-=-=-=-=-
 #Aurora bot
-from shlex import join
-from site import check_enableusersite
+# from shlex import join
+# from site import check_enableusersite
 from time import sleep 
 import telebot
 import pandas as pd
@@ -15,12 +15,12 @@ from urllib import request
 import requests 
 import pymorphy2
 import openai
-from translate import Translator
+# from translate import Translator
 import base64
 from telebot import types
 from logzero import logger, logfile
-import Generator
-import DataBase
+import Dependencies.Generator as Generator
+import Dependencies.DataBase as DataBase
 from gigachat import GigaChat
 
 logfile("logs.log")
@@ -57,7 +57,7 @@ bot = telebot.TeleBot(token=token)
 #Указание админов
 admins = [1746901164, 1018366370]
 push_message_admin = [admins[0]]
-data = pd.read_csv("DateFrame.csv")
+data = pd.read_csv("DataWrames/Birthdays.csv")
 
 #Указание переменных
 NowDR = []
@@ -133,8 +133,8 @@ def get_last_messages(message):
             bot.delete_message(message.chat.id, message_id=message.message_id)
             return False
         
-        bot.send_message(message.chat.id, "❌Эта функция временно не доступна.")
-        return False
+        # bot.send_message(message.chat.id, "❌Эта функция временно не доступна.")
+        # return False
     
         command = message.text.split()
         if len(command) < 2:
@@ -300,7 +300,7 @@ def generate_image(message):
                 
                 if (str(message.chat.id) != chatid):
                     
-                    datauser = pd.read_csv("user.csv")
+                    datauser = pd.read_csv("DataWranes/UsersData.csv")
                     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
                     last_tokens = datauser.loc[index, "tokens"]
                     
@@ -313,7 +313,7 @@ def generate_image(message):
             else:
                 if (str(message.chat.id) != chatid):
                     
-                    datauser = pd.read_csv("user.csv")
+                    datauser = pd.read_csv("DataWranes/UsersData.csv")
                     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
                     
                     if str(datauser.loc[index, "status"]) not in ['admin', 'mvp', 'group']:
@@ -415,20 +415,20 @@ def ask_chatgpt(message, chat_state = True):
                 DataBase.check.data(message, bot.get_chat_member(chatid, message.from_user.id).status)
             
         DataBase.give_tokens.ask(message, use_tokens)
-#         completion = openai.ChatCompletion.create(
-#     model="gpt-3.5-turbo-16k-0613",
-#   messages=[
-#     {"role": "user", "content": promt}
-#   ]
-# )
-        with GigaChat(credentials=Gigachat_token, verify_ssl_certs=False) as giga:
-            response = giga.chat(promt)
+        completion = openai.ChatCompletion.create(
+    model="gpt-3.5-turbo-16k-0613",
+  messages=[
+    {"role": "user", "content": promt}
+  ]
+)
+        # with GigaChat(credentials=Gigachat_token, verify_ssl_certs=False) as giga:
+        #     response = giga.chat(promt)
 
         response = response.choices[0].message.content
 
-        # text = str("ChatGPT - " + completion.choices[0].message.content)
+        text = str("ChatGPT - " + completion.choices[0].message.content)
         # text = str("ChatGPT - " + response)
-        text = str("GigaChat - " + response)
+        # text = str("GigaChat - " + response)
         
         time_end = datetime.datetime.now()
         time_end = time_end.replace(microsecond=0)
@@ -464,7 +464,7 @@ def ask_chatgpt(message, chat_state = True):
             bot.send_message(message.chat.id, txt_two, parse_mode="MarkdownV2")
             return False
         if str(message.chat.id) != chatid: 
-            datauser = pd.read_csv("user.csv")
+            datauser = pd.read_csv("DataWranes/UsersData.csv")
             index = datauser.index[datauser['chat_id'] == message.chat.id][0]
             if (str(datauser.loc[index, 'status']) not in ['admin', 'mvp', 'group']):
                 index = datauser.index[datauser['chat_id'] == message.chat.id][0]
@@ -584,17 +584,17 @@ def profile(message):
     if str(message.chat.type) != 'private':
         bot.send_message(message.chat.id, "❌Напиши команду боту в личные сообщения")
         return False
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv("DataWranes/UsersData.csv")
     if datauser[datauser['chat_id'] == message.chat.id].shape[0] == 0:
         if bot.get_chat_member(chatid, message.from_user.id).status == 'left':
             append_data = f"{message.from_user.username},{message.chat.id},default,250"
         else:
             append_data = f"{message.from_user.username},{message.chat.id},group,0"
-        with open("user.csv", 'a') as csv:
+        with open("DataWranes/UsersData.csv", 'a') as csv:
             csv.write(f"\n{append_data}")
             csv.close()
         logger.debug("Add new user")
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv("DataWranes/UsersData.csv")
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
     name = datauser.loc[index, "name"]
     status = datauser.loc[index, "status"]
@@ -616,16 +616,16 @@ def prom(message):
         bot.send_message(message.chat.id, 'Введи промо после комманды')
         return False
     # if message.text.split()[1] in ["8G3H5E7J6K", "X9Z7K1D3C8", "L6M2N9B1V5", "P4O6I8U7Y2","Q1W5E9R4T7","H3J7K6L0P9", "V2B4N1M8X3","Z7X9Y2C6V1", "R4T5Y7U2I8"]:
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv("DataWranes/UsersData.csv")
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv("DataWranes/UsersData.csv")
     if str(message.text.split()[1]) == "C5D69F4A2B":
         datauser.loc[index, "tokens"] = 5000
     if str(message.text.split()[1]) == "P4O6I8U7Y2":
         datauser.loc[index, "status"] = 'premium'
     if str(message.text.split()[1]) in ["X9Z7K1D3C8", "L6M2N9B1V5"]:
         datauser.loc[index, "status"] = "mvp"
-    datauser.to_csv('user.csv', index=False)
+    datauser.to_csv('DataWranes/UsersData.csv', index=False)
     bot.send_message(message.chat.id, "Промокод успешно активирован!")
     promo = message.text.split()[1]
     logger.warning(f"Promo {promo}")
@@ -881,7 +881,7 @@ def save_new(message):
         return False
 
 def add_tokens_all():
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv("DataWranes/UsersData.csv")
     for i in range(datauser.shape[0]):
         if str(datauser.loc[i, 'status']) == 'default':
             datauser.loc[i, 'tokens'] = 250
@@ -891,7 +891,7 @@ def add_tokens_all():
             datauser.loc[i, 'tokens'] = 1000
         if str(datauser.loc[i, 'status']) == 'premium':
             datauser.loc[i, 'tokens'] = 250
-    datauser.to_csv('user.csv', index=False)
+    datauser.to_csv('DataWranes/UsersData.csv', index=False)
 #==========================================================
 #Запись истории чата
 @bot.message_handler(func=lambda message: message.chat.id == int(chatid), content_types=['text'])

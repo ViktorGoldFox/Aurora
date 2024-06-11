@@ -20,8 +20,8 @@ import Dependencies.DataBase as DataBase
 
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 # Bot_config
-bot_token = "6904577368:AAHMjsneMF0HaLHiWa08Bv2ZzBZOwIJ7yTo" #Aurora
-# bot_token = "6601620934:AAGvgH9rDE4JHrUBThkrXrca9zfJIpMeh0Q" #BotTest
+# bot_token = "6904577368:AAHMjsneMF0HaLHiWa08Bv2ZzBZOwIJ7yTo" #Aurora
+bot_token = "6601620934:AAGvgH9rDE4JHrUBThkrXrca9zfJIpMeh0Q" #BotTest
         # main        # second
 admins = [1746901164, 1018366370]
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
@@ -92,7 +92,8 @@ def profile(message, isBack=False):
         bot.send_message(message.chat.id, "❌Идут тех. работы! Попробуйте позже!")
         return False
         
-    profile_data = DataBase.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
+    # profile_data = DataBase.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
+    profile_data = DataBase.get_profile(message)
     
     if not isBack:
         DataBase.check.CurentNickname(message)
@@ -470,7 +471,8 @@ def show_status(message):
     markup.add(back_button)
     
     bot.edit_message_text("Выберете статус который зотите преобрести:", ch_id, message.message_id, reply_markup=markup)
-    
+
+   
 #BackEnd 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -478,9 +480,11 @@ def callback_query(call: CallbackQuery):
     if call.data == 'change_model':
         show_models(call.message)
         
+    
     if call.data == 'buy_status':
         show_status(call.message)
         
+    
     if call.data == 'buy mvp': 
         bot.edit_message_text("""
 ⭐️ Чтобы приобрести статус MVP, выполните следующие шаги:
@@ -495,6 +499,40 @@ def callback_query(call: CallbackQuery):
 
 ❤️‍🔥 Спасибо за вашу поддержку и понимание!
                               """, call.message.chat.id, call.message.message_id)   
+        
+    
+    if call.data == 'buy_tokens': 
+        bot.edit_message_text("""
+⭐️ Чтобы приобрести токены, выполните следующие шаги:
+
+ 1. 🧐Узнайте свой никнейм. 
+Главная станица телеграмма -> три полоски в левом верхнем углу -> Мой профиль ->  Зажмите пальцем поле "Имя пользователя" -> Копировать имя
+ 2. 📲Отправьте донат суммой 1 токен = 0,1₽ на Boosty (https://boosty.to/aurorabot/donate) с текстом:
+{Ваш nickname, например @ViktorGoldFox} толичество токенов [Комментарий (не обязательно)]
+ 3. 🕗Ожидайте повышение (может занять до 6 часов, в зависимости от времени суток)
+
+🙏При трудностях, обратитесь в техническую поддержку: @ViktorGoldFox.
+
+❤️‍🔥 Спасибо за вашу поддержку и понимание!
+                              """, call.message.chat.id, call.message.message_id) 
+        
+        
+    if call.data == 'buy_images': 
+        bot.edit_message_text("""
+⭐️ Чтобы приобрести токены, выполните следующие шаги:
+
+ 1. 🧐Узнайте свой никнейм. 
+Главная станица телеграмма -> три полоски в левом верхнем углу -> Мой профиль ->  Зажмите пальцем поле "Имя пользователя" -> Копировать имя
+ 2. 📲Отправьте донат суммой одна картина = 0,5₽ на Boosty (https://boosty.to/aurorabot/donate) с текстом:
+{Ваш nickname, например @ViktorGoldFox} толичество картин [Комментарий (не обязательно)]
+ 3. 🕗Ожидайте повышение (может занять до 6 часов, в зависимости от времени суток)
+
+🙏При трудностях, обратитесь в техническую поддержку: @ViktorGoldFox.
+
+❤️‍🔥 Спасибо за вашу поддержку и понимание!
+                              """, call.message.chat.id, call.message.message_id) 
+          
+    
     if call.data == 'buy premuim': 
         bot.edit_message_text("""
 ⭐️ Чтобы приобрести статус MVP, выполните следующие шаги:
@@ -509,11 +547,7 @@ def callback_query(call: CallbackQuery):
 
 ❤️‍🔥 Спасибо за вашу поддержку и понимание!
                               """, call.message.chat.id, call.message.message_id)
-    # if call.data == 'change_model':
-    #     show_models(call.message)
-        
-    # if call.data == 'change_model':
-    #     show_models(call.message)
+    
     
     if call.data.split()[0] == 'change':
         DataBase.changeModel(call.message, model=call.data.split()[1])

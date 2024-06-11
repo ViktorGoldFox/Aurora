@@ -13,7 +13,7 @@ mvp_models = ["gpt-4-turbo", 'gpt-4-turbo-24-04-09', "gpt-4-1106-preview", "gpt-
 premuim_models = ["gpt-3.5-turbo-1106", "gpt-3.5-turbo-16k"]
 default_models = ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-0914"]
 
-user_data_path = "user.csv"
+user_data_path = "DataWrames/UsersData.csv"
 
 class check:
     def CurentNickname(message):
@@ -143,9 +143,9 @@ def get_last_images(message):
     return last_images
     
     
-def get_profile(message, member_status):
+def get_profile(message): #, member_status):
     mess_id = message.chat.id
-    if check.NotAvailabilityUser(mess_id): check.add_user(message, member_status)
+    # if check.NotAvailabilityUser(mess_id): check.add_user(message, member_status)
     
     datauser = pd.read_csv(user_data_path)
     
