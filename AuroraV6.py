@@ -15,8 +15,8 @@ from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import telebot
 
-import BackGround
-import DataBase
+import Dependencies.BackGround as BackGround
+import Dependencies.DataBase as DataBase
 
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 # Bot_config
@@ -26,7 +26,7 @@ bot_token = "6904577368:AAHMjsneMF0HaLHiWa08Bv2ZzBZOwIJ7yTo" #Aurora
 admins = [1746901164, 1018366370]
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 # Logs
-logfile("logs.log")
+logfile("logs/logs.log")
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 usage_ask = 0
 usage_gen = 0
@@ -58,6 +58,7 @@ fresh_time = 5 #In minutes
 bot = telebot.TeleBot(bot_token)
 # data = pd.read_csv("DateFrame.csv")
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
+Censored_path = "Add-ons/censored.png"
 #FrontEnd
 @bot.message_handler(commands=["/help"])
 def help(message):
@@ -94,7 +95,7 @@ def profile(message, isBack=False):
     profile_data = DataBase.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
     
     if not isBack:
-        DataBase.check.checkCurNickName(message)
+        DataBase.check.CurentNickname(message)
     
     ms_text = f"""
     ⭐️Профиль
@@ -403,7 +404,7 @@ def generate(message):
             return False
         
         if BackGround.CheckCensored(images=GenImagesData):
-            with open("censored.png", 'rb') as image:
+            with open(Censored_path, 'rb') as image:
                 bot.send_photo(ch_id, image, caption="❌Промт зацензурен. Генерация невозможна")
                 bot.delete_message(ch_id, loading_mess.message_id)
                 
@@ -549,6 +550,14 @@ if __name__ == "__main__":
     load_config()
     # try:
     if True:
+        print("""
+ ░█████╗░██╗░░░██╗██████╗░░█████╗░██████╗░░█████╗░ 
+ ██╔══██╗██║░░░██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗ 
+ ███████║██║░░░██║██████╔╝██║░░██║██████╔╝███████║ 
+ ██╔══██║██║░░░██║██╔══██╗██║░░██║██╔══██╗██╔══██║ 
+ ██║░░██║╚██████╔╝██║░░██║╚█████╔╝██║░░██║██║░░██║ 
+ ╚═╝░░╚═╝░╚═════╝░╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+              """)
         logger.info("Бот успешно запущен!")
         
         # bot.infinity_polling()

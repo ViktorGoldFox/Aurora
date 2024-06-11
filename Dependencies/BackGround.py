@@ -8,7 +8,10 @@ from datetime import datetime, timedelta
 import openai
 from gigachat import GigaChat
 
-import Generator
+import Dependencies.Generator as Generator
+
+dataFrame_path = "Birthdays.csv"
+config_path = 'Configs/config.json'
 
 # Weather
 def GetWeather(sity):
@@ -60,30 +63,43 @@ def GetForecast(sity):
         test = dt.split()
         
         if test[1] == "12:00:00":
+            main_weather = str(weather_data['list'][i]['weather'][0]['description'])
             temperature = str(round(weather_data['list'][i]['main']['temp']))
             humidity = str(weather_data['list'][i]['main']['humidity'])
-            weathers = str(weather_data['list'][i]['weather'][0]['description'])
-            weather_main = str(weather_data['list'][i]['weather'][0]['main'])
             wind = str(weather_data['list'][i]['wind']['speed'])
             bar = str(round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1))
             vid = str(weather_data['list'][i]['visibility'] / 1000)
-
-            # date = str(test[0]).replace("-", '\.')
+            
+            weather_split = main_weather.split()
+            text = " ".join(weather_split[1:len(weather_split)])
+            main_weather = f"{weather_split[0].title()} {text}"
             
             date = str(weather_data['list'][i]["dt_txt"]).split().pop(0)
             
-            text_weather = (f"""\n{date}:```День: \nПогода: {weathers.title()} \nТемпература: {temperature} °C \nВлажность: {humidity}% \nВетер: {wind}m/s \nДавление: {bar}мм.рт.ст \nВидимость: {vid}km```""")
+            text_weather = (f"""\n{date}:```День: 
+☂ Погода: {main_weather.title()}
+℃ Температура: {temperature} °C 
+☰ Влажность: {humidity}% 
+๑ Ветер: {wind}m/s 
+⍗ Давление: {bar}мм.рт.ст 
+☁ Видимость: {vid}km```""")
             global_weather.append(f"{text_weather}")
             
         if test[1] == "03:00:00":
-            temperature1 = str(round(weather_data['list'][i]['main']['temp']))
-            humidity1 = str(weather_data['list'][i]['main']['humidity'])
-            weathers1 = str(weather_data['list'][i]['weather'][0]['description'])
-            wind1 = str(weather_data['list'][i]['wind']['speed'])
-            bar1 = str(round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1))
-            vid1 = str(weather_data['list'][i]['visibility'] / 1000)
+            temperature1 = round(weather_data['list'][i]['main']['temp'])
+            humidity1 = weather_data['list'][i]['main']['humidity']
+            weathers1 = weather_data['list'][i]['weather'][0]['description']
+            wind1 = weather_data['list'][i]['wind']['speed']
+            bar1 = round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1)
+            vid1 = weather_data['list'][i]['visibility'] / 1000
         
-            text_weather1 = (f"""```Ночь: \nПогода: {weathers1.title()} \nТемпература: {temperature1} °C \nВлажность: {humidity1}% \nВетер: {wind1}m/s \nДавление: {bar1}мм.рт.ст \nВидимость: {vid1}km```""")
+            text_weather1 = (f"""```Ночь: 
+☂ Погода: {weathers1.title()} 
+℃ Температура: {temperature1} °C 
+☰ Влажность: {humidity1}% 
+๑ Ветер: {wind1}m/s 
+⍗ Давление: {bar1}мм.рт.ст 
+☁ Видимость: {vid1}km```""")
             global_weather.append(f"{text_weather1}")
     
     morph = MorphAnalyzer()
@@ -123,7 +139,7 @@ def addNewUser(message, onCommand=False):
 
         save_text = f"{str(gent.word).title()},@{message.from_user.username},{argus[2]},{argus[3]}"
         
-        with open('DateFrame.csv ', 'a') as f:
+        with open(dataFrame_path, 'a') as f:
             f.write(save_text + '\n')
             f.close()
         
@@ -134,7 +150,7 @@ def addNewUser(message, onCommand=False):
     
    
 def loadConfig():
-    with open("config.json") as file_data:
+    with open(config_path) as file_data:
         data = load(file_data)
         base_model = data["base_model"]
         technical_brake = data['technical_brake']

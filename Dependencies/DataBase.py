@@ -13,21 +13,22 @@ mvp_models = ["gpt-4-turbo", 'gpt-4-turbo-24-04-09', "gpt-4-1106-preview", "gpt-
 premuim_models = ["gpt-3.5-turbo-1106", "gpt-3.5-turbo-16k"]
 default_models = ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-0914"]
 
+user_data_path = "user.csv"
 
 class check:
     def CurentNickname(message):
-        datauser = pd.read_csv("user.csv")
+        datauser = pd.read_csv(user_data_path)
 
         if datauser[datauser['name'] == message.from_user.username].shape[0] == 0:
             index = datauser.index[datauser['chat_id'] == message.chat.id][0]
             
             datauser.at[index, 'name'] = message.from_user.username
             
-            datauser.to_csv('user.csv', index=False)
+            datauser.to_csv(user_data_path, index=False)
             
     
     def NotAvailabilityUser(user_chat_id) -> bool:
-        datauser = pd.read_csv("user.csv")
+        datauser = pd.read_csv(user_data_path)
         if datauser[datauser['chat_id'] == user_chat_id].shape[0] == 0: return True
         else: return False
         
@@ -39,7 +40,7 @@ class check:
 
     def add_user(message, member_status):
 
-            datauser = pd.read_csv("user.csv")
+            datauser = pd.read_csv(user_data_path)
 
             if datauser[datauser['chat_id'] == message.chat.id].shape[0] == 0:
 
@@ -48,7 +49,7 @@ class check:
                 else:
                     append_data = f"\n{message.from_user.username},{message.chat.id},group,0"
 
-                with open("user.csv", 'a') as csv:
+                with open(user_data_path, 'a') as csv:
                     csv.write(f"{append_data}")
                     csv.close()
 
@@ -56,7 +57,7 @@ class check:
     
     
     def ShowLastToken(chat_id, gp_id):
-        datauser = pd.read_csv("user.csv")
+        datauser = pd.read_csv(user_data_path)
 
         index = datauser.index[datauser['chat_id'] == chat_id][0]
         
@@ -68,7 +69,7 @@ class check:
 
     def images_gen(message):
         
-        datauser = pd.read_csv("user.csv")
+        datauser = pd.read_csv(user_data_path)
         
         index = datauser.index[datauser['chat_id'] == message.chat.id][0]
         
@@ -81,7 +82,7 @@ class check:
             
     def tokens_ask(message, use_tokens):
     
-        datauser = pd.read_csv("user.csv")
+        datauser = pd.read_csv(user_data_path)
         
         index = datauser.index[datauser['chat_id'] == message.chat.id][0]
         
@@ -95,13 +96,13 @@ class check:
 class subtraction_tokens():
     def gen(message):
         if str(message.chat.id) != chatid:
-            datauser = pd.read_csv("user.csv")
+            datauser = pd.read_csv(user_data_path)
             index = datauser.index[datauser['chat_id'] == message.chat.id][0]
             
             if str(datauser.loc[index, 'status']) not in ['admin', 'group']:
                 if message.chat.id != chatid:
                     datauser.loc[index, "images"] = int(datauser.loc[index, "images"]) - 1
-                    datauser.to_csv('user.csv', index=False)
+                    datauser.to_csv(user_data_path, index=False)
                     return 202
             else:
                 return 200
@@ -110,18 +111,18 @@ class subtraction_tokens():
     def ask(message, use_tokens):
         if str(message.chat.id) != chatid:
             
-            datauser = pd.read_csv("user.csv")
+            datauser = pd.read_csv(user_data_path)
             index = datauser.index[datauser['chat_id'] == message.chat.id][0]
             
             if str(datauser.loc[index, 'status']) not in ['admin', 'group']:
                 if message.chat.id != chatid:
                     datauser.loc[index, "tokens"] = int(datauser.loc[index, "tokens"]) - (use_tokens * 5)
-                    datauser.to_csv('user.csv', index=False)
+                    datauser.to_csv(user_data_path, index=False)
                     return 202
                 
                 
 def get_last_tokens(message):
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv(user_data_path)
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
     
     if str(datauser.loc[index, "status"]) not in ['admin', 'group']:
@@ -132,7 +133,7 @@ def get_last_tokens(message):
 
 
 def get_last_images(message):
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv(user_data_path)
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
     
     if str(datauser.loc[index, "status"]) not in ['admin', 'group']:
@@ -146,7 +147,7 @@ def get_profile(message, member_status):
     mess_id = message.chat.id
     if check.NotAvailabilityUser(mess_id): check.add_user(message, member_status)
     
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv(user_data_path)
     
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
     name = datauser.loc[index, "name"]
@@ -164,13 +165,13 @@ def get_profile(message, member_status):
     
 
 def getCurrentModel(message):
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv(user_data_path)
     
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
     return datauser.loc[index, "model"]
 
 def get_models(message_chatId):
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv(user_data_path)
     
     index = datauser.index[datauser['chat_id'] == message_chatId][0]
     status = datauser.loc[index, "status"]
@@ -190,12 +191,12 @@ def get_models(message_chatId):
         
         
 def changeModel(message, model):
-    datauser = pd.read_csv("user.csv")
+    datauser = pd.read_csv(user_data_path)
     
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
     
     datauser.at[index, 'model'] = model
             
-    datauser.to_csv('user.csv', index=False)
+    datauser.to_csv(user_data_path, index=False)
     
     
