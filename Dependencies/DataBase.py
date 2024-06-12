@@ -162,13 +162,13 @@ def get_profile(message): #, member_status):
     
     return [name, status, tokens, model, images]
     
-    
 
 def getCurrentModel(message):
     datauser = pd.read_csv(user_data_path)
     
     index = datauser.index[datauser['chat_id'] == message.chat.id][0]
     return datauser.loc[index, "model"]
+
 
 def get_models(message_chatId):
     datauser = pd.read_csv(user_data_path)
@@ -200,3 +200,58 @@ def changeModel(message, model):
     datauser.to_csv(user_data_path, index=False)
     
     
+def setStatus(userName, setStatusName):
+    datauser = pd.read_csv(user_data_path)
+    
+    if setStatusName not in ["premuim", "mvp", "admin", "default", "group"]: 
+        return "❌Неверное имя статуса"
+    index = datauser.index[datauser['name'] == userName][0]
+    
+    datauser.loc[index, "status"] = str(setStatusName)
+    datauser.to_csv(user_data_path, index=False)
+    
+    return f"✅Успешно установлен статус {setStatusName} пользователю {userName}"
+
+
+def setTokens(userName, tokenColl):
+    datauser = pd.read_csv(user_data_path)
+    
+    index = datauser.index[datauser['name'] == userName][0]
+    
+    datauser.loc[index, "tokens"] = tokenColl
+    datauser.to_csv(user_data_path, index=False)
+    
+    return f"✅Успешно установленно {tokenColl} токенов пользователю {userName}"
+
+
+def giveTokens(userName, tokenColl):
+    datauser = pd.read_csv(user_data_path)
+    
+    index = datauser.index[datauser['name'] == userName][0]
+    
+    datauser.loc[index, "tokens"] = int(datauser.loc[index, "tokens"]) + tokenColl
+    datauser.to_csv(user_data_path, index=False)
+    
+    return f"✅Успешно выдано {tokenColl} токенов пользователю {userName}"
+
+
+def setImage(userName, imagesColl):
+    datauser = pd.read_csv(user_data_path)
+    
+    index = datauser.index[datauser['name'] == userName][0]
+    
+    datauser.loc[index, "images"] = imagesColl
+    datauser.to_csv(user_data_path, index=False)
+    
+    return f"✅Успешно установленно {imagesColl} картин пользователю {userName}"
+
+
+def setImage(userName, imagesColl):
+    datauser = pd.read_csv(user_data_path)
+    
+    index = datauser.index[datauser['name'] == userName][0]
+    
+    datauser.loc[index, "images"] = int(datauser.loc[index, "images"]) + imagesColl
+    datauser.to_csv(user_data_path, index=False)
+    
+    return f"✅Успешно выданно {imagesColl} картин пользователю {userName}"

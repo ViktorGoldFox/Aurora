@@ -3,5 +3,5 @@
     "version": "v6",
     "base_model": "gpt-4",
     "gen_q": 0,
-    "ask_q": 0
+    "ask_q": 1
 }
