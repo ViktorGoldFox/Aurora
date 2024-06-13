@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 
 #*Codes:
 #! 401 - user not subcrige
@@ -11,7 +12,7 @@ chatid = '-1001665880322'
 
 mvp_models = ["gpt-4-turbo", 'gpt-4-turbo-24-04-09', "gpt-4-1106-preview", "gpt-4o-2024-05-13"]
 premuim_models = ["gpt-3.5-turbo-1106", "gpt-3.5-turbo-16k"]
-default_models = ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-0914"]
+default_models = ["gpt-3.5-turbo-0613"]
 
 user_data_path = "DataWrames/UsersData.csv"
 
@@ -35,7 +36,9 @@ class check:
     def subscribe(message, member_status):
         if (str(message.chat.id) != chatid) & (str(message.chat.id) != '1467854871'):
             if member_status == 'left':
-                return 401
+                return True
+        
+        return False
 
 
     def add_user(message, member_status):
@@ -45,9 +48,9 @@ class check:
             if datauser[datauser['chat_id'] == message.chat.id].shape[0] == 0:
 
                 if member_status == 'left':
-                    append_data = f"\n{message.from_user.username},{message.chat.id},default,250"
+                    append_data = f"\n{message.from_user.username},{message.chat.id},default,250,15,gpt-3.5-turbo-0613,0"
                 else:
-                    append_data = f"\n{message.from_user.username},{message.chat.id},group,0"
+                    append_data = f"\n{message.from_user.username},{message.chat.id},group,0,0,gpt-3.5-turbo-0613,0"
 
                 with open(user_data_path, 'a') as csv:
                     csv.write(f"{append_data}")
@@ -61,7 +64,7 @@ class check:
 
         index = datauser.index[datauser['chat_id'] == chat_id][0]
         
-        if (str(datauser.loc[index, "status"]) not in ['admin', 'group']) | chat_id == gp_id:
+        if (str(datauser.loc[index, "status"]) not in ['admin', 'group']) | chat_id != gp_id:
             return True
         else:
             return False
@@ -79,7 +82,21 @@ class check:
             
         return False
             
+    
+    def user(user_name):
+        user_name = str(user_name).replace("@", "")
+        
+        datauser = pd.read_csv(user_data_path)
+        
+        if datauser[datauser['name'] == user_name].shape[0] == 0:
+            return "❌ Пользователь не найден"
+        else:
+            index = datauser.index[datauser['name'] == user_name][0]
+
+            return datauser.loc[index, "chat_id"]
             
+    
+    
     def tokens_ask(message, use_tokens):
     
         datauser = pd.read_csv(user_data_path)
@@ -143,9 +160,9 @@ def get_last_images(message):
     return last_images
     
     
-def get_profile(message): #, member_status):
+def get_profile(message, member_status):
     mess_id = message.chat.id
-    # if check.NotAvailabilityUser(mess_id): check.add_user(message, member_status)
+    if check.NotAvailabilityUser(mess_id): check.add_user(message, member_status)
     
     datauser = pd.read_csv(user_data_path)
     
@@ -187,7 +204,7 @@ def get_models(message_chatId):
             
             return models
         
-        case "default": return default_models
+        case "default" | "group": return default_models
         
         
 def changeModel(message, model):
@@ -208,6 +225,16 @@ def setStatus(userName, setStatusName):
     index = datauser.index[datauser['name'] == userName][0]
     
     datauser.loc[index, "status"] = str(setStatusName)
+    match str(setStatusName):
+        case "default":
+            datauser.loc[index, "tokens"] = 1000
+            datauser.loc[index, "images"] = 15
+        case "premuim":
+            datauser.loc[index, "tokens"] = 50000
+            datauser.loc[index, "images"] = 45
+        case "mvp":
+            datauser.loc[index, "tokens"] = 20000
+            datauser.loc[index, "images"] = 100
     datauser.to_csv(user_data_path, index=False)
     
     return f"✅Успешно установлен статус {setStatusName} пользователю {userName}"
@@ -218,7 +245,7 @@ def setTokens(userName, tokenColl):
     
     index = datauser.index[datauser['name'] == userName][0]
     
-    datauser.loc[index, "tokens"] = tokenColl
+    datauser.loc[index, "tokens"] = int(tokenColl)
     datauser.to_csv(user_data_path, index=False)
     
     return f"✅Успешно установленно {tokenColl} токенов пользователю {userName}"
@@ -227,9 +254,11 @@ def setTokens(userName, tokenColl):
 def giveTokens(userName, tokenColl):
     datauser = pd.read_csv(user_data_path)
     
+    if datauser[datauser['name'] == userName].shape[0] == 0: return "❌ Пользователь не найден"
+    
     index = datauser.index[datauser['name'] == userName][0]
     
-    datauser.loc[index, "tokens"] = int(datauser.loc[index, "tokens"]) + tokenColl
+    datauser.loc[index, "tokens"] = int(datauser.loc[index, "tokens"]) + int(tokenColl)
     datauser.to_csv(user_data_path, index=False)
     
     return f"✅Успешно выдано {tokenColl} токенов пользователю {userName}"
@@ -240,18 +269,78 @@ def setImage(userName, imagesColl):
     
     index = datauser.index[datauser['name'] == userName][0]
     
-    datauser.loc[index, "images"] = imagesColl
+    datauser.loc[index, "images"] = int(imagesColl)
     datauser.to_csv(user_data_path, index=False)
     
     return f"✅Успешно установленно {imagesColl} картин пользователю {userName}"
 
 
-def setImage(userName, imagesColl):
+def giveImage(userName, imagesColl):
     datauser = pd.read_csv(user_data_path)
     
     index = datauser.index[datauser['name'] == userName][0]
     
-    datauser.loc[index, "images"] = int(datauser.loc[index, "images"]) + imagesColl
+    datauser.loc[index, "images"] = int(datauser.loc[index, "images"]) + int(imagesColl)
     datauser.to_csv(user_data_path, index=False)
     
     return f"✅Успешно выданно {imagesColl} картин пользователю {userName}"
+
+
+def checkBirthday(NowDay,NowMonth):
+    data = pd.read_csv("DataWrames/Birthdays.csv")
+        
+    if int(data[(data['dday'] == NowDay) & (data["dmon"] == NowMonth)].shape[0]) <= 0: return False
+    
+    NowDR = []
+    if int(data[(data['dday'] == NowDay) & (data["dmon"] == NowMonth)].shape[0]) >= 1:
+        NowDR = data.index[(data['dday'] == NowDay) & (data["dmon"] == NowMonth)].tolist()
+        
+    print(NowDR)
+    
+    ind = 0
+    nicknames = []
+    names = []
+    for ind in range(len(NowDR)):
+        print(ind)
+        
+        nicknames.append(data.loc[NowDR[ind],"nickname"])
+        names.append(data.loc[NowDR[ind],"Username"])
+                
+        print(nicknames, names)
+        
+        ind += 1
+        
+    return nicknames, names
+    
+
+def giveAllTokens():
+    datauser = pd.read_csv("DataWrames/UsersData.csv")
+    
+    for index in range(datauser.shape[0]):
+        match str(datauser.loc[index, 'status']):
+            case "default":
+                datauser.loc[index, "tokens"] = int(datauser.loc[index, "tokens"]) + max(int(1000 - datauser.loc[index, "tokens"]), 0)
+                datauser.loc[index, "images"] = int(datauser.loc[index, "images"]) + max(int(15 - datauser.loc[index, "images"]), 0)
+                datauser.loc[index, "model"] = "gpt-3.5-turbo-0613"
+            case "premuim":
+                datauser.loc[index, "tokens"] = int(datauser.loc[index, "tokens"]) + max(int(5000 - datauser.loc[index, "tokens"]), 0)
+                datauser.loc[index, "images"] = int(datauser.loc[index, "images"]) + max(int(45 - datauser.loc[index, "images"]), 0)
+            case "mvp":
+                datauser.loc[index, "tokens"] = int(datauser.loc[index, "tokens"]) + max(int(20000 - datauser.loc[index, "tokens"]), 0)
+                datauser.loc[index, "images"] = int(datauser.loc[index, "images"]) + max(int(100 - datauser.loc[index, "images"]), 0)
+            
+    datauser.to_csv('DataWrames/UsersData.csv', index=False)
+
+
+def RestartStatus():
+    datauser = pd.read_csv("DataWrames/UsersData.csv")
+    
+    for index in range(datauser.shape[0]):
+        if str(datetime.now()).split()[0] == datauser.loc[index, "end_time"]:
+            datauser.loc[index, "end_time"] = 0
+            datauser.loc[index, "status"] = "default"
+            datauser.loc[index, "tokens"] = 1000
+            datauser.loc[index, "images"] = 15
+            
+            datauser.to_csv('DataWrames/UsersData.csv', index=False)
+            

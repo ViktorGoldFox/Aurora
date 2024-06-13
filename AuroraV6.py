@@ -9,7 +9,8 @@
 
 # from os import error
 from datetime import datetime
-import re
+import schedule
+import threading
 from time import sleep
 from logzero import logger, logfile, loglevel, logging
 from sys import exit
@@ -18,15 +19,16 @@ from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import telebot
 
+# from Aurora_bot import NowDR
 import Dependencies.BackGround as BackGround
 import Dependencies.DataBase as DataBase
 
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 # Bot_config
-# bot_token = "6904577368:AAHMjsneMF0HaLHiWa08Bv2ZzBZOwIJ7yTo" #Aurora
-bot_token = "6601620934:AAGvgH9rDE4JHrUBThkrXrca9zfJIpMeh0Q" #BotTest
+bot_token = "6904577368:AAHMjsneMF0HaLHiWa08Bv2ZzBZOwIJ7yTo" #Aurora
+# bot_token = "6601620934:AAGvgH9rDE4JHrUBThkrXrca9zfJIpMeh0Q" #BotTest
         # main        # second
-admins = [1746901164, 1018366370]
+admins = [1746901164, 1018366370]#, 1467854871]
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 # Logs
 logfile("logs/logs.log")
@@ -67,7 +69,8 @@ bot = telebot.TeleBot(bot_token)
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 Censored_path = "Add-ons/censored.png"
 #FrontEnd
-@bot.message_handler(commands=["/help"])
+#! Поменять на актуальные комманды
+@bot.message_handler(commands=["help"])
 def help(message):
     ms_text = f"""
 /add - Добавиться в базу данных 
@@ -85,56 +88,72 @@ VGF©                    Aurora{version}"""
 
 @bot.message_handler(commands=["start"])
 def start(message):
-    logger.info(f"@{message.from_user.username} вывел start!")
     bot.send_message(message.chat.id, f"Привет! Я - нейросетевой бот AuroraBot {version}, и я здесь, чтобы повеселиться. Я могу помочь тебе в разных задачах /help. Я люблю общаться с людьми и узнавать что-то новое. Давай пообщаемся!")
+    logger.info(f"@{message.from_user.username} вывел start!")
 
 #add
 @bot.message_handler(commands=["profile"])
 def profile(message, isBack=False):
-    if BackGround.chenkChatType(message): bot.send_message(message.chat.id, "❌Напиши команду боту в личные сообщения"); return False
-    
-    if str(message.chat.type) != 'private': bot.send_message(message.chat.id, "❌Напиши команду боту в личные сообщения")
-    
-    if (technical_brake) & (message.chat.id not in admins): 
-        bot.send_message(message.chat.id, "❌Идут тех. работы! Попробуйте позже!")
-        return False
+    try:
+        logger.info(f"@{message.from_user.username} Начал запрос к профилю")
         
-    # profile_data = DataBase.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
-    profile_data = DataBase.get_profile(message)
-    
-    if not isBack:
-        DataBase.check.CurentNickname(message)
-    
-    ms_text = f"""
-    ⭐️Профиль
-    📕Имя: {profile_data[0]}
-    ⚙️Модель: {profile_data[3]}
-    📖Статус: {profile_data[1]}
-    💲Токены: {profile_data[2]}
-    📸Фотографий: {profile_data[4]}
-    """
-    
-    markup = types.InlineKeyboardMarkup()
-    change_btn = types.InlineKeyboardButton("⚙️Изменить модель", callback_data="change_model")
-    status_btn = types.InlineKeyboardButton("📖Купить статус", callback_data="buy_status")
-    tokens_btn = types.InlineKeyboardButton("💲Купить токены", callback_data="buy_tokens")
-    images_btn = types.InlineKeyboardButton("📸Купить фотографии", callback_data="buy_images")
-    
-    markup.add(change_btn, status_btn, tokens_btn, images_btn)
-    
-    if isBack:
-        bot.edit_message_text(ms_text, message.chat.id, message.message_id, reply_markup=markup)
-    else:
-        bot.send_message(message.chat.id, ms_text, reply_markup=markup)
-    
-    logger.info(f"@{message.from_user.username} Вывел профиль")
+        if BackGround.chenkChatType(message): 
+            bot.send_message(message.chat.id, "❌Напиши команду боту в личные сообщения")
+            
+            logger.info(f"@{message.from_user.username} ❌Напиши команду боту в личные сообщения")
+            return False
+
+        if (technical_brake) & (message.chat.id not in admins): 
+            bot.send_message(message.chat.id, "❌Идут тех. работы! Попробуйте позже!")
+            
+            logger.info(f"@{message.from_user.username} ❌Идут тех. работы! Попробуйте позже!")
+            return False
+
+        # profile_data = DataBase.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
+        
+        profile_data = DataBase.get_profile(message, bot.get_chat_member(gp_id, message.from_user.id).status)
+        
+        logger.info(f"@{message.from_user.username} {profile_data}")
+
+        if not isBack:
+            DataBase.check.CurentNickname(message)
+            logger.info(f"@{message.from_user.username} Проверка на коректность никнейма")
+
+        ms_text = f"""
+        ⭐️Профиль
+        📕Имя: {profile_data[0]}
+        ⚙️Модель: {profile_data[3]}
+        📖Статус: {profile_data[1]}
+        💲Токены: {profile_data[2]}
+        📸Фотографий: {profile_data[4]}
+        """
+
+        markup = types.InlineKeyboardMarkup()
+        change_btn = types.InlineKeyboardButton("⚙️Изменить модель", callback_data="change_model")
+        status_btn = types.InlineKeyboardButton("📖Купить статус", callback_data="buy_status")
+        tokens_btn = types.InlineKeyboardButton("💲Купить токены", callback_data="buy_tokens")
+        images_btn = types.InlineKeyboardButton("📸Купить фотографии", callback_data="buy_images")
+
+        markup.add(change_btn, status_btn, tokens_btn, images_btn)
+
+        if isBack:
+            bot.edit_message_text(ms_text, message.chat.id, message.message_id, reply_markup=markup)
+        else:
+            bot.send_message(message.chat.id, ms_text, reply_markup=markup)
+
+        logger.info(f"@{message.from_user.username} Вывел профиль")
+        
+    except Exception as error:
+        logger.error(f"Ошибка профиля! \n Код: {error}")
+        return False
 
 
 @bot.message_handler(commands=["add"])
 def add(message):
     ch_id = message.chat.id
     
-    if str(message.chat.type) != 'private': bot.send_message(message.chat.id, "❌Напиши команду боту в личные сообщения")
+    logger.info(f"@{message.from_user.username} ❌Идут тех. работы! Попробуйте позже!")
+    if str(message.chat.type) != 'private': bot.send_message(message.chat.id, "❌Напиши команду боту в личные сообщения"); return False
     
     if (technical_brake) & (message.chat.id not in admins): 
         bot.send_message(message.chat.id, "❌Идут тех. работы! Попробуйте позже!")
@@ -145,7 +164,7 @@ def add(message):
         return False
     
     if message.text.split()[0] != '/add':
-        if BackGround.add.checkCanceled(message.text): bot.send_message(ch_id, "Отменил!")
+        if BackGround.add.checkCanceled(message.text): bot.send_message(ch_id, "Отменил!"); return False
     
         addResualt = BackGround.add.addNewUser(message)
 
@@ -174,11 +193,10 @@ def add(message):
 
 @bot.message_handler(commands=["forecast"])
 def forecast(message):
+    loading_message = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
+    loading_message
     try:
         command_split = message.text.split()
-
-        loading_message = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
-        loading_message
 
         if (technical_brake) & (message.chat.id not in admins): 
             bot.edit_message_text("❌Идут тех. работы! Попробуйте позже!", message.chat.id, loading_message.message_id)
@@ -190,20 +208,29 @@ def forecast(message):
         else:
             sity = "Санкт-петербург"
 
-        weather_text = BackGround.weather.GetForecast(sity)
+        # try:
+        if True:
+            weather_text = BackGround.weather.GetForecast(sity)
+        # except:
+            # send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
+            
+            # return False
 
         weather_text = BackGround.markdown_convert(weather_text)
         
-        bot.edit_message_text(weather_text, message.chat.id, loading_message.message_id, parse_mode="MarkdownV2" )
+        bot.edit_message_text(weather_text, message.chat.id, loading_message.message_id, parse_mode="MarkdownV2")
 
         logger.info(f"@{message.from_user.username} вывел прогноз погоды")
         
     except Exception as error:
+        bot.edit_message_text("❌Возникла ошибка. Наша команда уже работает над ее исправлением!", message.chat.id, loading_message.message_id)
+        
         logger.error(f"Ошибка в погоде: {error}") 
-        send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
+        
+        return False
         
         
-@bot.message_handler(commands=["dailyForecast"])
+@bot.message_handler(commands=["dailyforecast"])
 def forecastperday(message):
     try:
         command_split = message.text.split()
@@ -221,7 +248,12 @@ def forecastperday(message):
         else:
             sity = "Санкт-петербург"
 
-        weather_text = BackGround.weather.GetForecastPerDay(sity)
+        try:
+            weather_text = BackGround.weather.GetForecastPerDay(sity)
+        except:
+            send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
+            
+            return False
 
         weather_text = BackGround.markdown_convert(weather_text)
         
@@ -236,11 +268,11 @@ def forecastperday(message):
 
 @bot.message_handler(commands=["weather"])
 def weather(message):
+    loading_message = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
+    loading_message
     try:
         command_split = message.text.split()
 
-        loading_message = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
-        loading_message
 
         if (technical_brake) & (message.chat.id not in admins): 
             bot.edit_message_text("❌Идут тех. работы! Попробуйте позже!", message.chat.id, loading_message.message_id)
@@ -252,18 +284,24 @@ def weather(message):
         else:
             sity = "Санкт-петербург"
 
-        weather_text = BackGround.weather.GetWeather(sity)
+        try:
+            weather_text = BackGround.weather.GetWeather(sity)
+        except:
+            send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
+            
+            return False
 
-        bot.edit_message_text(weather_text, message.chat.id, loading_message.message_id, parse_mode="MarkdownV2")
+        bot.edit_message_text(weather_text, message.chat.id, loading_message.message_id)
 
         logger.info(f"@{message.from_user.username} вывел погоду")
         
     except Exception as error:
+        bot.edit_message_text("❌Возникла ошибка. Наша команда уже работает над ее исправлением!", message.chat.id, loading_message.message_id)
+        
         logger.error(f"Ошибка в погоде: {error}") 
-        send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
 
 
-@bot.message_handler(commands=["tempMetrics"])
+@bot.message_handler(commands=["tempmetrics"])
 def metrics(message):
     command_split = message.text.split()
 
@@ -280,18 +318,27 @@ def metrics(message):
     else:
         sity = "Санкт-петербург"
         
-    bot.send_photo(message.chat.id, photo=BackGround.weather.create_temp_metric(sity))
+    try:
+        photo_metrics = BackGround.weather.create_temp_metric(sity)
+    except:
+        send_error(loading_message, "❌В названии города ошибка. Попробуйте снова!")
+        
+        return False
+    
+    logger.info(f"@{message.from_user.username} вывел метрику температуры")
+    
+    bot.send_photo(message.chat.id, photo=photo_metrics)
     
     bot.delete_message(message.chat.id, loading_message.message_id)
     
 
 @bot.message_handler(commands=["sum"])
 def sum(message):
-    # try:
-        loading_mess = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
-        loading_mess
+    loading_mess = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
+    loading_mess
+    try:
         
-        logger.info(f"@{message.from_user.username} Начал запрос gpt")
+        logger.info(f"@{message.from_user.username} Начал запрос sum")
         
         ch_id = message.chat.id
         
@@ -299,24 +346,27 @@ def sum(message):
         if (technical_brake) & (message.chat.id not in admins): 
             bot.edit_message_text("❌Идут тех. работы! Попробуйте позже!", ch_id, loading_mess.message_id)
             return False
+        
+        if str(message.chat.id) != str(gp_id):
+            send_error(loading_mess, "❌Напиши команду в группе")
+            return False
+        
         # Проверка на участника группы
         if bot.get_chat_member(gp_id, message.from_user.id).status == 'left': 
-            bot.send_message(message.chat.id, text="❌Вы не являетесь участником группы.")
+            send_error(loading_mess, "❌Вы не являетесь участником группы.")
             return False
         # Проверка на свежость запроса
+        
         if BackGround.freshcheck(message, fresh_time): 
             send_error(bot_ms=loading_mess, error_text="❌Запрос устарел. Попробуйте снова!")
             return False
-        # Проверка на то что у пользователя есть никнейм
-        if message.from_user.username == None: 
-            send_error(bot_ms=loading_mess, error_text="❌Прежде чем использовать комманду /ask, надо установить никнейм!")
-            return False
             
-        summorysen_coll = BackGround.summoryzen.GetSummorysenNumber(message)
-        
         if BackGround.summoryzen.CheckSumNumberInRange(summorysen_coll):
             send_error(loading_mess.message_id, text="❌Значения для суммирования: 50,100,150,350. Попробуйте снова.")
             return False
+        
+        summorysen_coll = BackGround.summoryzen.GetSummorysenNumber(message)
+        
         
         get_text = BackGround.summoryzen.GetLines(summorysen_coll)
         
@@ -337,19 +387,21 @@ def sum(message):
         
         logger.info(f'@{message.from_user.username} суммировал {summorysen_coll} сообщений')
         
-    # except Exception as error:
-        # logger.error(f"Ошибка sum \nКод: {error}")
-        # 
-        # return False
+    except Exception as error:
+        bot.edit_message_text("❌Возникла ошибка. Наша команда уже работает над ее исправлением!", ch_id, loading_mess.message_id)
+        
+        logger.error(f"Ошибка sum \nКод: {error}")
+        
+        return False
 
 
 @bot.message_handler(commands=["ask", "gpt"])
 def ask(message, chat_is_local = True):
     global usage_ask
-    if True:
-    # try:
-        loading_mess = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
-        loading_mess
+    # if True:
+    loading_mess = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
+    loading_mess
+    try:
         
         logger.info(f"@{message.from_user.username} Начал запрос gpt")
         
@@ -379,6 +431,10 @@ def ask(message, chat_is_local = True):
                 send_error(bot_ms=loading_mess, error_text="❌Нужно ввести промт после команды. Попробуйте снова!")
                 return False
         
+        if DataBase.check.NotAvailabilityUser(message):
+            DataBase.check.add_user(message, bot.get_chat_member(gp_id, message.from_user.id).status)
+        # DataBase.check.NotAvailabilityUser(message, gp_id=gp_id, user_status=bot.get_chat_member(gp_id, message.from_user.id).status)
+        
         user_gpt_model = DataBase.getCurrentModel(message)
         if user_gpt_model in ["gpt-4-turbo", 'gpt-4-turbo-24-04-09', "gpt-4-1106-preview"]:
             usage_tokens = BackGround.mathToken(text=user_promt, is_gpt4=True)
@@ -389,7 +445,11 @@ def ask(message, chat_is_local = True):
         if message.reply_to_message != None: user_promt = f"{user_promt}: {message.reply_to_message.text}"
         
         if DataBase.check.tokens_ask(message, usage_tokens):
-            bot.edit_message_text("❌Недостаточно токенов! Для покупки писать сюда - @ViktorGoldFox", message.chat.id, loading_mess.message_id)
+            markup = types.InlineKeyboardMarkup()
+            tokens_btn = types.InlineKeyboardButton("💲Купить токены", callback_data="buy_tokens")
+            markup.add(tokens_btn)
+            
+            bot.edit_message_text("❌Недостаточно токенов!", message.chat.id, loading_mess.message_id, markup=markup)
             return False
         
         if message.chat.id != gp_id:
@@ -397,12 +457,13 @@ def ask(message, chat_is_local = True):
         
         DataBase.subtraction_tokens.ask(message, usage_tokens)
         
-        answer_text = BackGround.askGPT(user_promt, user_gpt_model, open_ai_token)
-        
-        if DataBase.check.ShowLastToken(message, gp_id): 
-            ms_text = f"{BackGround.markdown_convert(answer_text)} \n{BackGround.GetLastTokens(message, usage_tokens, DataBase.get_last_tokens(message))}"
+        answer_text = BackGround.ask.askGPT(user_promt, user_gpt_model, open_ai_token)
         
         ms_text = f"{BackGround.markdown_convert(answer_text)}"
+        
+        if DataBase.check.ShowLastToken(message.chat.id, gp_id): 
+            ms_text = f"{ms_text} \n{BackGround.Tokens.GetLastTokens(message, usage_tokens, DataBase.get_last_tokens(message))}"
+        
         
         if (usage_ask % ask_coll) == 0:
             markup = types.InlineKeyboardMarkup()
@@ -415,18 +476,21 @@ def ask(message, chat_is_local = True):
         usage_ask += 1
         
         logger.info(f"@{message.from_user.username} Использовал GPT \nPromt: {user_promt} \nAverage: {answer_text} \nTokens: {usage_tokens}")
-    # except Exception as error:
-    #     logger.error(f"Ошибка GPT \nКод: {error}")
+    except Exception as error:
+        bot.edit_message_text("❌Возникла ошибка. Наша команда уже работает над ее исправлением!", ch_id, loading_mess.message_id)
+    
+        logger.error(f"Ошибка GPT \nКод: {error}")
         
-    #     return False
+        return False
         
 
 @bot.message_handler(commands=["gen", "generate", "image"])
 def generate(message):
     global usage_gen
+    loading_mess = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
+    loading_mess
+    
     try:
-        loading_mess = bot.send_message(message.chat.id, "🕐 Подождите несколько секунд. Ваше сообщение обрабатывается")
-        loading_mess
         
         logger.info(f"@{message.from_user.username} Начал запрос gen")
         
@@ -440,6 +504,7 @@ def generate(message):
         if BackGround.freshcheck(message, fresh_time): 
             send_error(bot_ms=loading_mess, error_text="❌Запрос устарел. Попробуйте снова!")
             return False
+        
         # Проверка на то что у пользователя есть никнейм
         if message.from_user.username == None: 
             send_error(bot_ms=loading_mess, error_text="❌Прежде чем использовать комманду /ask, надо установить никнейм!")
@@ -454,7 +519,11 @@ def generate(message):
             return False
 
         if DataBase.check.images_gen(message):
-            bot.edit_message_text("❌Недостаточно токенов! Для покупки писать сюда - @ViktorGoldFox", message.chat.id, loading_mess.message_id)
+            markup = types.InlineKeyboardMarkup()
+            images_btn = types.InlineKeyboardButton("📸Купить фотографии", callback_data="buy_images")
+            markup.add(images_btn)
+            
+            bot.edit_message_text("❌Недостаточно картин!", message.chat.id, loading_mess.message_id, markup=markup)
             return False
         
         GenImagesData = BackGround.gen.ImageGenerator(promt=user_promt)
@@ -471,7 +540,14 @@ def generate(message):
                 
                 return False
         
-        # DataBase.NotAvailabilityUser(message, gp_id=gp_id, user_status=bot.get_chat_member(gp_id, message.from_user.id).status)
+        if DataBase.check.subscribe(message, bot.get_chat_member(-1002064516590, message.from_user.id).status):
+            send_error(loading_mess, "❌Для начала работы с нейросетями подпишитесь на канал @Aurorafloodbot_info и повторите попытку")
+            
+            return False
+        
+        if DataBase.check.NotAvailabilityUser(message):
+            DataBase.check.add_user(message, bot.get_chat_member(gp_id, message.from_user.id).status)
+        
         DataBase.subtraction_tokens.gen(message)
         
         generatedImage = BackGround.gen.ConvertImage(GenImagesData['images'][0])
@@ -481,13 +557,13 @@ def generate(message):
             btn = types.InlineKeyboardButton("❤️Поддержать автора", url=donate_url)
             markup.add(btn)
             
-            if DataBase.check.ShowLastToken(message, gp_id):
-                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.GetLastImages(message, DataBase.get_last_images(message))}"), reply_markup=markup)
+            if DataBase.check.ShowLastToken(message.chat.id, gp_id):
+                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.Tokens.GetLastImages(message, DataBase.get_last_images(message))}"), reply_markup=markup)
             else:
                 bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово"), reply_markup=markup)
         else:
-            if DataBase.check.ShowLastToken(message, gp_id):
-                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.GetLastImages(message, DataBase.get_last_images(message))}"))
+            if DataBase.check.ShowLastToken(message.chat.id, gp_id):
+                bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово {BackGround.Tokens.GetLastImages(message, DataBase.get_last_images(message))}"))
             else:
                 bot.send_photo(message.chat.id, generatedImage, caption=str(f"✅Kandinsky{model_id} - @{message.from_user.username}, ваше изображение готово"), reply_markup=markup)
                 
@@ -495,12 +571,31 @@ def generate(message):
         
         usage_gen += 1
         
+        logger.info(f"@{message.from_user.username} Использовал GEN \nPromt: {user_promt}")
+        
     except Exception as error:
-        logger.error(f"Ошибка GPT \nКод: {error}")
+        bot.edit_message_text("❌Возникла ошибка. Наша команда уже работает над ее исправлением!", ch_id, loading_mess.message_id)
+        
+        logger.error(f"Ошибка GEN \nКод: {error}")
         
         return False
 
 
+@bot.message_handler(commands=['easter'])
+def Easter(message):
+    logger.warning(f'@{message.from_user.username} Нашел посхалку!!!!!!!!')
+    
+    bot.send_message(message.from_user.id, ".       ⣄⡀⠀⠀⠀⠀⠀⠀⣠⡇\n⠀⠀⠀⣻⣿⣶⣤⣀⢈⣀⣲⣷⣿⡄⠀⠀⠀\n⠀⠀⠀⣾⣿⣿⣿⣷⣿⣿⣿⣿⣷⣿⡆⠀⠀⠀⠀⠀⠀\n⠀⠀⢠⣾⣛⢿⠿⢿⣿⣿⣿⣛⣹⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n⠀⠀⣸⣿⣿⣿⣶⣶⣶⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n⠀⠜⣿⡟⠸⣿⣿⣿⢙⣿⣿⣿⣿⣿⣿⣿⣿⠑⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n⠀⠀⣿⣗⠰⠘⡹⡏⣀⡟⣿⣿⣿⣿⣿⣿⣿⢆⠀⠀⠀⠀⡀⢀⣀⠀⠀⠀⠀⠀\n⠀⠘⣿⣽⠀⠀⠁⠁⠘⠽⢻⣿⡏⣹⣿⡿⣿⠁⠉⢀⣤⣾⣾⣿⣿⠗⠋⠁⠀⠀\n⠀⠀⠸⡸⣦⠀⠀⠀⠀⠀⣸⣿⣧⣿⣿⡗⠃⠀⣐⣾⣿⣿⣿⠛⠀⠀⠀⠀⠀⠀\n⠀⠀⠀⠀⠙⣷⣶⣲⣷⣄⡾⣽⣟⣛⣛⣛⡓⠶⣟⣿⣿⡿⣵⠀⠀⠀⠀⠀⠀⠀\n⠀⠀⠀⠀⠀⣿⣿⣿⣿⣫⣿⣽⣿⣶⣶⣶⣿⡞⠘⣿⣿⣿⣷⣦⠀⠀⠀⠀⠀⠀\n⠀⠀⠀⠀⠀⢹⢿⢏⣻⣿⣿⣿⣿⣿⣿⣿⡗⠀⠀⠈⠻⣿⣿⣿⣧⢨⠀⠀⠀⠀\n⠀⠀⠀⠀⠀⢂⣼⡾⡿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠈⠻⣿⣿⣾⣆⠀⠀⠀\n⠀⠀⠀⢀⠀⠍⣿⣻⣦⣿⣿⣿⣿⣿⣿⣿⣿⣇⢂⠀⠀⠀⠀⠙⣿⣿⣿⣇⡄⠀\n⠀⠀⠀⠀⠀⢠⣧⣸⣿⣿⡿⡿⠿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⠀\n⠀⠀⠀⠀⠀⣸⣿⣿⣿⣟⣿⣾⣷⡻⣍⢽⣿⣿⡄⢀⡀⢀⡀⠀⠀⣿⣿⣿⣿⠀\n⠀⠀⠀⠀⠀⣿⣿⣿⡟⢋⣻⠿⣿⣿⣿⣷⣿⣿⣷⡄⠖⢀⠀⠈⠀⠻⣿⡟⠃⠀\n⠀⠀⠀⠀⢸⣿⣿⣿⢁⣾⣿⣿⡾⡜⣿⣿⣿⣿⣿⣿⣶⣤⡀⠀⠀⠀⢠⡄⠀⠀\n⠀⠀⠀⢀⣿⣿⣿⣿⢸⣿⣿⣿⣿⣵⡿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⣀⣼⡗⠀⠀\n⠀⠀⠀⣸⢿⣿⣿⣿⢸⣿⣿⣿⣿⣿⠟⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠆⠀\n⠀⠀⠠⠻⠿⣿⣭⣽⣿⣿⣿⣿⣿⣿⣷⣦⣽⣿⣿⣿⣿⣿⣿⣿⣿⡟⠉⠁⠀⠀\n⠀⠀⠘⣤⣀⣃⣀⢸⣿⣿⣿⣿⣿⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣋⣠⣴⠇⠀⠀\n⠀⠀⠀⠸⠉⠹⠇⠀⠈⣻⣿⣿⣿⠀⠀⠀⠀⠀⠫⢿⣿⣿⣿⣿⣿⠿⠏⠀⠀⠀\n⠀⠀⠀⠀⠀⠀⠠⠀⣧⣿⣿⠟⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠀⠀⠀⡶⣤⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢯⣿⣋⡒⢤⣄⣀⣠⡄\n")
+
+
+@bot.message_handler(commands=["getId"])
+def getId(message):
+    bot.send_message(message.chat.id, str(message.chat.id))
+    
+@bot.message_handler(commands=["test"])
+def test(message):
+    DataBase.giveAllTokens()
+    
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶
 @bot.message_handler(commands=["sudo"], func=lambda message: message.chat.id in admins)
 def sudo(message):
@@ -508,21 +603,67 @@ def sudo(message):
     
     command_split = message.text.split()
     if len(command_split) < 2: 
-        bot.send_message(ch_id, """
-info | stats - выводит статистику
-sendMessage - выводит сообщение (1) в определенный чат (2)
-logs - выводит (1) строчек лога
-clearLogs - очишает логи
-setStatus устанавливает (1) статус пользователю (2)
-giveTokens - выдает (1) количество токенов пользователю (2)
-givePhoto - выдает (1)  количество фотографий пользователю (2)
-stop - 
-~ - выводит все админ команды
-                         """)
+        text = """
+```
+/sudo info
+```
+Выводит статистику
+```
+/sudo GetChatId (1 userName)
+```
+Получить чат айди по ник нему (1)
+
+```
+/sudo sendMessage (1 text) (2 chat_id)
+```
+Выводит сообщение (1) в определенный чат (2)
+
+```
+/sudo logs (1 num)
+```
+Выводит (1) строчек лога
+
+```
+/sudo clearLogs
+```
+Очишает логи
+
+```
+/sudo setStatus (1 status) (2 user chatid)
+``` 
+Устанавливает (1) статус пользователю (2)
+
+```
+/sudo giveTokens (1 num) (2 user chatid)
+``` 
+Выдает (1) количество токенов пользователю (2)
+
+```
+/sudo giveImages (1 num) (2 user chatid)
+``` 
+Выдает (1)  количество фотографий пользователю (2)
+```
+/sudo stop
+```
+Отстанавливает бота 
+
+/sudo - выводит все админ команды
+                         """
+        text = BackGround.markdown_convert(text)
+        
+        bot.send_message(ch_id, text,parse_mode="MarkdownV2")
         logger.warning(f'@{message.from_user.username} Вывел хомяк!')
         return True
     
     match str(command_split[1]):
+        case "GetChatId":
+            if len(command_split) < 3: 
+                bot.send_message(ch_id, "❌Недостаточно аргументов")
+                return False
+            
+            bot.send_message(ch_id, DataBase.check.user(str(command_split[2])))
+            
+            
         case "logs":
             if len(command_split) < 3: 
                 bot.send_messge(ch_id, "❌Недостаточно аргументов")
@@ -545,11 +686,12 @@ stop -
             time_work = current_time - start_time
             bot.send_message(message.from_user.id,f"""```Json
 ╔═════════════╗
-╟➣Status: OK          
-╟➣Time Work: "{time_work}"
-╟➣Version: "{version}"
-╟➣GPT_ask: "{usage_ask}"
-╟➣Image_gen: "{usage_gen}"
+╟➣Статус: OK          
+╟➣Время работы: "{time_work}"
+╟➣Тех работы: "{technical_brake}"
+╟➣GPT запросов: "{usage_ask}"
+╟➣GEN запросов: "{usage_gen}"
+╟➣Версия: "{version}"
 ```""", parse_mode='MarkdownV2')
             logger.warning(f'@{message.from_user.username} Узнал инфу!')
         
@@ -571,15 +713,46 @@ stop -
         
         case "tokens":
             if len(command_split) < 5: 
-                bot.send_messge(ch_id, "❌Недостаточно аргументов")
+                bot.send_message(ch_id, "❌Недостаточно аргументов")
                 return False
             
-            if command_split[3] not in ["give", "set"]:
-                bot.send_messge(ch_id, "❌Неверное действие. set или give")
+            print(command_split[2])
+            print(command_split[3])
+            command_split[4] = str(command_split[4]).replace("@", "")
+            print(command_split[4])
+            
+            if command_split[2] not in ["give", "set"]:
+                bot.send_message(ch_id, "❌Неверное действие. set или give")
                 return False
             
-            if str(command_split[3]) == "give":
-                DataBase.giveTokens() 
+            if str(command_split[2]) == "give":
+                bot.send_message(ch_id, DataBase.giveTokens(command_split[4], command_split[3]))
+            elif str(command_split[2] == 'set'):
+                bot.send_message(ch_id, DataBase.setTokens(command_split[4], command_split[3]))
+        
+        
+        case "images":
+            if len(command_split) < 5: 
+                bot.send_message(ch_id, "❌Недостаточно аргументов")
+                return False
+            
+            if str(command_split[2]) not in ["give", "set"]:
+                bot.send_message(ch_id, "❌Неверное действие. set или give")
+                return False
+            
+            if str(command_split[2]) == "give":
+                bot.send_message(ch_id, DataBase.giveImage(command_split[4], command_split[3]))
+            elif str(command_split[2] == 'set'):
+                bot.send_message(ch_id, DataBase.setImage(command_split[4], command_split[3]))
+        
+        
+        case "setStatus":
+            if len(command_split) < 4: 
+                bot.send_mesфsge(ch_id, "❌Недостаточно аргументов")
+                return False
+            
+            bot.send_message(ch_id, DataBase.setStatus(command_split[3], command_split[2]))
+           
             
         case "stop":
             exit()
@@ -705,14 +878,45 @@ def callback_query(call: CallbackQuery):
         profile(call.message, isBack=True)
         
         # bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-    
+
+@bot.message_handler(func=lambda message: str(message.chat.id) == gp_id, content_types=['text'])
+def write_chat_history(message):
+    if True:
+        message_text = str(message.text)
+        message_username = str(message.from_user.username)
+        save_text = str(message_username + ":" + message_text + '\n')
+        with open("DataWrames/HistoryData.txt", 'a', encoding='utf-8') as file:
+            file.write(str(save_text))
+        file.close()
 
 def send_error(bot_ms, error_text):
     bot.edit_message_text(chat_id=bot_ms.chat.id, message_id=bot_ms.message_id, text=error_text)
     sleep(5)
-    bot.delete_message(bot_ms, message_id=bot_ms.message_id)
+    bot.delete_message(bot_ms.chat.id, message_id=bot_ms.message_id)
     
     logger.error(error_text)
+
+#everys
+def checkbr(NowDay=0,NowMonth=0):
+    # try:
+    if True:
+        NowDate = datetime.now()
+        NowDay = NowDate.day
+        NowMonth = NowDate.month
+        
+        print(0)
+            
+        nicknames, names = DataBase.checkBirthday(NowDay, NowMonth)
+        
+        ind = 0
+        for i in range(len(nicknames)):
+            text = f"Доброго дня! Сегодня день рождения у {nicknames[i]}, пожелаем {names[i]} удачи, счастья, отличного настроения и всего наилучшего!\n"
+            bot.send_message(gp_id, "–=–=–=–=–=–=–=–=–=–=–=–\n" + text + "–=–=–=–=–=–=–=–=–=–=–=–")
+            
+            ind += 1
+            
+    # except Exception as e:
+    #     logger.error(f"Ошибка в поздравление пользователя")   
     
     
 def load_config():
@@ -721,11 +925,40 @@ def load_config():
     
     logger.info("Конфиг успешно загружен!")
 
+
 def exit():
     BackGround.config.pushConfig(technical_brake, usage_ask, usage_gen)
        
+      
+def send_weather():
+    try:
+        weather_text = BackGround.weather.GetWeather(sity = "Санкт-петербург")
+        
+        text = (f"Доброе утро, Петербуржцы! \n{weather_text}")
+
+        #Отправка в группу
+        bot.send_message(gp_id,text)
+        
+        logger.info(f'Погода в 8:00 успешно отправленна')
+    
+    except Exception as e:
+        logger.error(f'Ошибка в погоде. Код: {e}') 
+       
+       
+def treager():
+    while True:
+        schedule.run_pending()
+        sleep(1)
 #=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶=̶ 
 if __name__ == "__main__":
+    schedule.every().sunday.at("00:00").do(DataBase.giveAllTokens)
+    schedule.every().day.at("00:01").do(DataBase.RestartStatus)
+    schedule.every().day.at("10:00").do(checkbr)
+    schedule.every().day.at("08:00").do(send_weather)
+    
+    threading_treager = threading.Thread(target=treager)
+    threading_treager.start()
+    
     print("""
  ░█████╗░██╗░░░██╗██████╗░░█████╗░██████╗░░█████╗░ 
  ██╔══██╗██║░░░██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗ 
@@ -734,13 +967,11 @@ if __name__ == "__main__":
  ██║░░██║╚██████╔╝██║░░██║╚█████╔╝██║░░██║██║░░██║ 
  ╚═╝░░╚═╝░╚═════╝░╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝╚═╝░░╚═╝
               """)
-    
     load_config()
     # try:
     if True:
-        loglevel(logging.INFO)
         logger.info("Бот успешно запущен!")
-        
+
         # bot.infinity_polling()
         try:
             bot.polling(non_stop=True, interval=1)

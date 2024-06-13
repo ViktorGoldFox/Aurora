@@ -16,7 +16,7 @@ dataFrame_path = "DataWrames/Birthdays.csv"
 config_path = 'Configs/config.json'
 
 # Weather
-class weather:
+class weather:        
     def GetWeather(sity):
         url = f"https://api.openweathermap.org/data/2.5/weather?q={sity}&units=metric&lang=ru&appid=c38e5a3db7bd33d13d9d0c37f83ccdec"
         weather_data = get(url).json()
@@ -26,9 +26,14 @@ class weather:
         weathers = str(weather_data['weather'][0]['description'])
         weather_main = str(weather_data['weather'][0]['main'])
         wind = str(weather_data['wind']['speed'])
+        wind_deg = weather_data['wind']['deg']
         bar = str(round(weather_data['main']['pressure'] * 0.750062, 1))
         vid = str(weather_data['visibility'] / 1000)
 
+        directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        index = round(wind_deg / 45) % 8
+        wind_deg = str(directions[index])
+        
         morph = MorphAnalyzer()
         word_c = morph.parse(sity)[0]
         gent = word_c.inflect({'loct'})
@@ -41,12 +46,12 @@ class weather:
 
         weather_text = f"""
     В {sity} сейчас: 
-        ☂ Погода: {weathers} 
-        ℃ Температура: {temperature} °C 
-        ☰ Влажность: {humidity}% 
-        ๑ Ветер: {wind}m/s 
-        ⍗ Давление: {bar}мм.рт.ст 
-        ☁ Видимость: {vid}km"""
+☂ Погода: {weathers} 
+℃ Температура: {temperature} °C 
+☰ Влажность: {humidity}% 
+๑ Ветер: {wind}m/s направление {wind_deg} 
+⍗ Давление: {bar}мм.рт.ст 
+☁ Видимость: {vid}km"""
 
         if weather_main == 'Snow':
             snow_speed = weather_data['snow']['1h']
@@ -71,9 +76,14 @@ class weather:
                 temperature = str(round(weather_data['list'][i]['main']['temp']))
                 humidity = str(weather_data['list'][i]['main']['humidity'])
                 wind = str(weather_data['list'][i]['wind']['speed'])
+                wind_deg = weather_data['list'][i]['wind']['deg']
                 bar = str(round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1))
                 vid = str(weather_data['list'][i]['visibility'] / 1000)
-
+                
+                directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+                index = round(wind_deg / 45) % 8
+                wind_deg = str(directions[index])
+                
                 weather_split = main_weather.split()
                 text = " ".join(weather_split[1:len(weather_split)])
                 main_weather = f"{weather_split[0].title()} {text}"
@@ -81,12 +91,12 @@ class weather:
                 date = str(weather_data['list'][i]["dt_txt"]).split().pop(0)
 
                 text_weather = (f"""\n{date}:```День: 
-    ☂ Погода: {main_weather.title()}
-    ℃ Температура: {temperature} °C 
-    ☰ Влажность: {humidity}% 
-    ๑ Ветер: {wind}m/s 
-    ⍗ Давление: {bar}мм.рт.ст 
-    ☁ Видимость: {vid}km```""")
+☂ Погода: {main_weather.title()}
+℃ Температура: {temperature} °C 
+☰ Влажность: {humidity}% 
+๑ Ветер: {wind}m/s направление {wind_deg} 
+⍗ Давление: {bar}мм.рт.ст 
+☁ Видимость: {vid}km```""")
                 global_weather.append(f"{text_weather}")
 
             if test[1] == "03:00:00":
@@ -94,16 +104,21 @@ class weather:
                 humidity1 = weather_data['list'][i]['main']['humidity']
                 weathers1 = weather_data['list'][i]['weather'][0]['description']
                 wind1 = weather_data['list'][i]['wind']['speed']
+                wind_deg1 = weather_data['list'][i]['wind']['deg']
                 bar1 = round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1)
                 vid1 = weather_data['list'][i]['visibility'] / 1000
 
+                directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+                index = round(wind_deg1 / 45) % 8
+                wind_deg1 = str(directions[index])
+                
                 text_weather1 = (f"""```Ночь: 
-    ☂ Погода: {weathers1.title()} 
-    ℃ Температура: {temperature1} °C 
-    ☰ Влажность: {humidity1}% 
-    ๑ Ветер: {wind1}m/s 
-    ⍗ Давление: {bar1}мм.рт.ст 
-    ☁ Видимость: {vid1}km```""")
+☂ Погода: {weathers1.title()} 
+℃ Температура: {temperature1} °C 
+☰ Влажность: {humidity1}% 
+๑ Ветер: {wind1}m/s направление {wind_deg1} 
+⍗ Давление: {bar1}мм.рт.ст 
+☁ Видимость: {vid1}km```""")
                 global_weather.append(f"{text_weather1}")
 
         morph = MorphAnalyzer()
@@ -132,9 +147,14 @@ class weather:
                 temperature = str(round(weather_data['list'][i]['main']['temp']))
                 humidity = str(weather_data['list'][i]['main']['humidity'])
                 wind = str(weather_data['list'][i]['wind']['speed'])
+                wind_deg = weather_data['list'][i]['wind']['deg']
                 bar = str(round(weather_data['list'][i]['main']['pressure'] * 0.750062, 1))
                 vid = str(weather_data['list'][i]['visibility'] / 1000)
-
+                
+                directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+                index = round(wind_deg / 45) % 8
+                wind_deg = str(directions[index])
+                
                 weather_split = main_weather.split()
                 text = " ".join(weather_split[1:len(weather_split)])
                 main_weather = f"{weather_split[0].title()} {text}"
@@ -142,12 +162,12 @@ class weather:
                 date = str(weather_data['list'][i]["dt_txt"]).split().pop(1)
 
                 text_weather = (f"""\n{date}:```День: 
-    ☂ Погода: {main_weather.title()}
-    ℃ Температура: {temperature} °C 
-    ☰ Влажность: {humidity}% 
-    ๑ Ветер: {wind}m/s 
-    ⍗ Давление: {bar}мм.рт.ст 
-    ☁ Видимость: {vid}km```""")
+☂ Погода: {main_weather.title()}
+℃ Температура: {temperature} °C 
+☰ Влажность: {humidity}% 
+๑ Ветер: {wind}m/s направление {wind_deg} 
+⍗ Давление: {bar}мм.рт.ст 
+☁ Видимость: {vid}km```""")
 
                 global_weather.append(text_weather)
 
@@ -347,17 +367,17 @@ class summoryzen:
         return get_text
     
 # Profile
-class Generate:
+class Tokens:
+    
     def GetLastTokens(message, use_tokens, last_token):
         ms_text = f"""
-    Потраченно ⊚: {use_tokens} 
-    Осталось ⊚: {last_token}"""
+Потраченно ⊚: {use_tokens} 
+Осталось ⊚: {last_token}"""
         return ms_text
-
-
+    
     def GetLastImages(message, last_image):
         ms_text = f"""
-    Осталось ⊚: {last_image}"""
+Осталось ⊚: {last_image}"""
         return ms_text 
 
 
@@ -434,6 +454,7 @@ def getPromt(text):
 
 def freshcheck(message, fr_time):
     time_difference = datetime.now() - datetime.fromtimestamp(message.date)
+    print(time_difference)
     if time_difference > timedelta(minutes=fr_time):
         return True
     else:
